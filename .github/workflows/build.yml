@@ -1,0 +1,39 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      # DPAPI での暗号化保存・上限 50 件・コピーと自動消去・通信の遮断を Windows 上で確かめる
+      - run: npx electron . --smoke
+        env:
+          PC_USERDATA: ${{ runner.temp }}\pc-userdata
+        timeout-minutes: 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-screenshots
+          path: smoke-out/
+      - run: npx electron-builder --win nsis portable --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PassCopy-Windows
+          path: |
+            dist/*.exe
+            docs/*.md
+          if-no-files-found: error

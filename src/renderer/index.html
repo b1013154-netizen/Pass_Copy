@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>PassCopy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="list" role="tab">一覧</button>
+      <button class="tab" data-tab="settings" role="tab">設定</button>
+      <button class="tab" data-tab="help" role="tab">ヘルプ（説明書）</button>
+    </nav>
+    <button id="lockBtn" class="icon-btn" title="ロックする" hidden>🔒</button>
+  </header>
+
+  <main>
+    <!-- 一覧 -->
+    <section id="tab-list" class="panel">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="表示名・ID・グループで絞り込み" autocomplete="off">
+        <button id="addBtn" class="primary">＋ 追加</button>
+      </div>
+      <div class="countline"><span id="count"></span><span id="clipNote"></span></div>
+      <div id="notice" class="notice" hidden></div>
+      <ul id="list" class="list"></ul>
+      <p id="empty" class="empty" hidden>まだ登録がありません。「＋ 追加」から ID とパスワードを登録してください。</p>
+    </section>
+
+    <!-- 設定 -->
+    <section id="tab-settings" class="panel" hidden>
+      <h2>動作</h2>
+      <label class="row">一覧を開くショートカット
+        <input id="s-hotkey" type="text" placeholder="例: Ctrl+Alt+P（空欄で使わない）">
+      </label>
+      <label class="row">コピーしたパスワードを消すまでの秒数
+        <input id="s-clear" type="number" min="0" max="600" step="5"><small>0 にすると消しません</small>
+      </label>
+      <label class="check"><input id="s-hide" type="checkbox"> コピーしたら一覧を隠す</label>
+      <label class="check"><input id="s-top" type="checkbox"> 一覧を常に最前面に表示する</label>
+      <label class="check"><input id="s-show" type="checkbox"> 起動したときに一覧を開く</label>
+      <label class="check"><input id="s-startup" type="checkbox"> Windows の起動時に自動で起動する（インストール版のみ）</label>
+      <p id="hotkeyError" class="error" hidden></p>
+
+      <h2>マスターパスワード（任意）</h2>
+      <p class="desc">設定すると、起動時やロック後にこのパスワードを入れないと一覧を見られなくなります。<strong>忘れると登録情報を取り出せなくなります。</strong></p>
+      <div id="masterBox"></div>
+      <label class="row">操作がないときに自動でロックするまでの分数
+        <input id="s-autolock" type="number" min="0" max="240"><small>0 にするとロックしません（マスターパスワード設定時のみ有効）</small>
+      </label>
+
+      <h2>バックアップ</h2>
+      <p class="desc">保存データはこの PC のこの Windows ユーザーでしか読めません。別の PC へ移すときは、パスワード付きのバックアップを書き出して読み込んでください。</p>
+      <div class="btns">
+        <button id="exportBtn">書き出す…</button>
+        <button id="importBtn">読み込む…</button>
+      </div>
+      <p class="desc small" id="aboutLine"></p>
+    </section>
+
+    <!-- ヘルプ -->
+    <section id="tab-help" class="panel" hidden>
+      <nav id="toc" class="toc"></nav>
+      <article id="doc" class="doc"></article>
+    </section>
+  </main>
+
+  <!-- 登録・編集 -->
+  <dialog id="editDlg">
+    <form id="editForm" method="dialog">
+      <h2 id="editTitle">追加</h2>
+      <label>表示名 <span class="req">必須</span><input name="name" type="text" maxlength="50" required placeholder="例: 社内ファイルサーバー"></label>
+      <label>グループ<input name="group" type="text" maxlength="30" placeholder="例: 仕事" list="groups"></label>
+      <datalist id="groups"></datalist>
+      <label>ID（ユーザー名）<input name="username" type="text" maxlength="256" autocomplete="off" spellcheck="false"></label>
+      <label>パスワード
+        <span class="pw">
+          <input name="password" type="password" maxlength="256" autocomplete="new-password" spellcheck="false">
+          <button type="button" id="pwShow" title="表示する">👁</button>
+          <button type="button" id="pwGen" title="ランダムなパスワードを作る">🎲</button>
+        </span>
+      </label>
+      <label>メモ<textarea name="memo" maxlength="500" rows="3" placeholder="接続先や用途など"></textarea></label>
+      <p id="editError" class="error" hidden></p>
+      <div class="btns end">
+        <button type="button" id="editCancel">キャンセル</button>
+        <button type="submit" class="primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- パスワード入力（バックアップ・マスターパスワード） -->
+  <dialog id="askDlg">
+    <form id="askForm" method="dialog">
+      <h2 id="askTitle"></h2>
+      <p id="askDesc" class="desc"></p>
+      <div id="askFields"></div>
+      <p id="askError" class="error" hidden></p>
+      <div class="btns end">
+        <button type="button" id="askCancel">キャンセル</button>
+        <button type="submit" class="primary" id="askOk">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ロック画面 -->
+  <div id="lockScreen" class="lock" hidden>
+    <form id="unlockForm">
+      <div class="lock-icon">🔒</div>
+      <h2>ロック中です</h2>
+      <p>マスターパスワードを入力してください。</p>
+      <input id="unlockPw" type="password" autocomplete="current-password">
+      <p id="unlockError" class="error" hidden></p>
+      <button class="primary" type="submit">解除</button>
+    </form>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="markdown.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

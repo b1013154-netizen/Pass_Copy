@@ -1,0 +1,62 @@
+{
+  "name": "pass-copy",
+  "productName": "PassCopy",
+  "version": "1.0.0",
+  "description": "登録した ID とパスワードをワンクリックでコピーできる、完全オフラインの Windows 用ツール（最大50件）",
+  "main": "src/main.js",
+  "author": "takuya",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "check": "node scripts/check.js",
+    "smoke": "electron . --smoke",
+    "dist": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "io.github.b1013154netizen.passcopy",
+    "productName": "PassCopy",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "build/tray.png",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "PassCopy",
+      "artifactName": "PassCopy-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "PassCopy-Portable-${version}.exe"
+    },
+    "extraResources": [
+      {
+        "from": "docs",
+        "to": "docs"
+      }
+    ],
+    "electronLanguages": [
+      "ja",
+      "en-US"
+    ]
+  }
+}
